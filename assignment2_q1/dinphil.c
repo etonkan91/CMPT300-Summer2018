@@ -6,6 +6,9 @@ Course: CMPT300
 Date: July 8, 2018
 Assignment 2 Question 1
 File: dinphil.c
+
+Example deadlock scenario:
+Resource hierarchy solution for dining philosopher will not generate deadlocks because the lower number philosopher must wait for the higher number philosopher to finish eating before locking any resources. Seem the highest philosopher will always be able to eat (it have its own fork and lower number philosopher must wait for higher number philosopher to finish eating). Deadlocks where two philosophers are waiting for each other's resource will not happen. Therefore, there are no specific input and expected output for TA to verify as Deadlock will never occur.
 */
 
 #include<stdio.h>
