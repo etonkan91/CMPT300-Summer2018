@@ -31,7 +31,10 @@ void* phil(int num)
     while(1) /* true */
     {
         /* Thinking */
-        pthread_cond_wait(&think_cv[num], &think_mut[num]);
+        if (pthread_cond_wait(&think_cv[num], &think_mut[num]))
+        {
+            printf("pthread_cond_wait on think cv failed on philosopher %d", num);
+        }
         
         /* Grab fork */
         if (num == 0)
@@ -49,7 +52,10 @@ void* phil(int num)
         pthread_mutex_lock(&mut_state);
         state[num] = 1; /* Change state to eating */
         pthread_mutex_unlock(&mut_state);
-        pthread_cond_wait(&eat_cv[num], &eat_mut[num]);
+        if(pthread_cond_wait(&eat_cv[num], &eat_mut[num]))
+        {
+            printf("pthread_cond_wait on eat cv failed on philosopher %d", num);
+        }
         
         /* Starting thinking, release forks */ 
         pthread_mutex_lock(&mut_state);
@@ -80,7 +86,11 @@ int main()
     for(i = 0; i < 5; ++i)
     {
         /* Creating 5 Philosophers represented with 5 threads*/
-        pthread_create(&tid[i],NULL,(void *)phil, (void *) i);
+        if(pthread_create(&tid[i],NULL,(void *)phil, (void *) i))
+        {
+            printf("pthread_create failed on thread %d", i);
+        }
+         
     }
     
     while (1) /* True */
@@ -93,12 +103,35 @@ int main()
             for (i = 0; i < 5; ++i)
             {            
 		        /* Close all threads, semaphore, mutex, and CV*/
-                pthread_kill(tid[i],0);
-                pthread_mutex_destroy(&fork_mut[i]);
-                pthread_mutex_destroy(&eat_mut[i]);
-                pthread_mutex_destroy(&think_mut[i]);
-                pthread_cond_destroy(&eat_cv[i]);
-                pthread_cond_destroy(&think_cv[i]);
+                if(pthread_kill(tid[i],0))
+                {
+                    printf("pthread_kill failed on thread %d", i);
+                }
+                
+                if(pthread_mutex_destroy(&fork_mut[i]))
+                {
+                    printf("pthread_mutex_destroy with fork_mut failed on thread %d", i);
+                }
+                
+                if(pthread_mutex_destroy(&eat_mut[i]))
+                {
+                    printf("pthread_mutex_destroy with eat_mut failed on thread %d", i);
+                }
+                
+                if(pthread_mutex_destroy(&think_mut[i]))
+                {
+                    printf("pthread_mutex_destroy with think_mut failed on thread %d", i);
+                }
+                
+                if(pthread_cond_destroy(&eat_cv[i]))
+                {
+                    printf("pthread_cond_destroy with eat_cv failed on thread %d", i);
+                }
+                
+                if(pthread_cond_destroy(&think_cv[i]))
+                {
+                    printf("pthread_cond_destroy with think_cv failed on thread %d", i);
+                }
             }
             break;
         }
