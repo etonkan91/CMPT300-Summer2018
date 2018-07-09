@@ -23,9 +23,9 @@ struct detData
 
 void* det(void *args)
 {
-    int ans = 0;
+    int i,j,m,nrow, ncol, ans = 0;
     struct detData *temp = (struct detData*) args;
-    pthread_t tid[temp->n];
+    pthread_t subtid[temp->n];
     int subDet[temp->n];
 
     if (n == 2)
@@ -34,7 +34,55 @@ void* det(void *args)
     }
     else
     {
+        struct detData[temp->n];
+        for (m = 0; m < n; m++)
+        {
+            /* Make temp matrix (sub matrix)*/
+            int ** submtx = (int**) malloc (temp->n-- * sizeof(int*));    
+            for (i = 0; i < temp->n--; i ++)
+            {
+                submtx[i] = (int *) malloc (temp->n-- * sizeof(int));
+            }
+            
+            /* Populate the sub matrix */
+            nrow = 0;
+            ncol = 0;
+            for (i = 0; i < temp->n--; i++)
+            {
+                if ( i == m)
+                {
+                    continue;
+                }
+                for (j = 0; j < temp->n--; j++)
+                {
+                    if ( j == m)
+                    {
+                        continue;
+                    }
+                    submtx[nrow][ncol] = temp->mtx[i][j];
+                    ncol++;
+                }
+                nrow++;
+            }   
+            
+            /* Create new thread to compute sub matrix's determinant*/
+            detData[i].n = temp->n--;
+            detData[i].mtx = submtx;
+            pthread_create(&subtid[i],NULL,(void *)det, &detData[i]);
+        }
         
+        for (m = 0; m < n; m++)
+        {
+            pthread_join(subtid[m], &subDet[m]);
+            if (m % 2 == 0)
+            {
+                ans += (temp->mtx[0][m] * subDet[m]);
+            }
+            else
+            {
+                ans -= (temp->mtx[0][m] * subDet[m]);
+            }
+        }
     }
 
     pthread_exit(ans);
