@@ -23,19 +23,20 @@ struct detData
 
 void* det(void *args)
 {
+    printf("New Thread \n");
     int i,j,m,nrow, ncol, ans = 0;
     struct detData *temp = (struct detData*) args;
     pthread_t subtid[temp->n];
     int subDet[temp->n];
 
-    if (n == 2)
+    if (temp->n == 2)
     {
         ans = (temp->mtx[0][0] * temp->mtx[1][1])-(temp->mtx[0][1] * temp->mtx[1][0]);
     }
     else
     {
-        struct detData[temp->n];
-        for (m = 0; m < n; m++)
+        struct detData subData[temp->n];
+        for (m = 0; m < temp->n; m++)
         {
             /* Make temp matrix (sub matrix)*/
             int ** submtx = (int**) malloc (temp->n-- * sizeof(int*));    
@@ -66,12 +67,12 @@ void* det(void *args)
             }   
             
             /* Create new thread to compute sub matrix's determinant*/
-            detData[i].n = temp->n--;
-            detData[i].mtx = submtx;
-            pthread_create(&subtid[i],NULL,(void *)det, &detData[i]);
+            subData[i].n = temp->n--;
+            subData[i].mtx = submtx;
+            pthread_create(&subtid[i],NULL,(void *)det, &subData[i]);
         }
         
-        for (m = 0; m < n; m++)
+        for (m = 0; m < temp->n; m++)
         {
             pthread_join(subtid[m], &subDet[m]);
             if (m % 2 == 0)
@@ -118,7 +119,7 @@ int main()
     {
         for (j = 0; j < n; j++)
         {
-            mtx[i][j] = rand();
+            mtx[i][j] = rand() % 10;
         }
     }   
     findDet.n = n;
@@ -127,6 +128,6 @@ int main()
     pthread_create(&tid,NULL,(void *)det, &findDet);
     
     pthread_join(tid, &ans);
-    printf("\n Determinant is %d \n", ans);
+    printf("\nDeterminant is %d \n", ans);
     return 0;
 }
