@@ -24,21 +24,19 @@ struct detData
 
 void* det(void *args)
 {
-    printf("New Thread \n");
-    int i,j,m,nrow, ncol, ans, sign, ret = 0;
+//    printf("New Thread \n");
+    int i,j,m,nrow, ncol, ans, subDet = 0;
+    int sign = 1;
     struct detData *temp = (struct detData*) args;
-//    pthread_t subtid[temp->n];
     int tempN = temp->n;
-    int subDet;
-    printf("tempN = %d \n", tempN);
     if (tempN == 2)
     {
-        printf("temp->n == 2 \n");
+//        printf("temp->n == 2 \n");
         ans = (temp->mtx[0][0] * temp->mtx[1][1])-(temp->mtx[0][1] * temp->mtx[1][0]);
+//        printf("ans = %d \n",ans);
     }
     else
     {
-        printf("else \n");
         struct detData subData[tempN];
         for (m = 0; m < tempN; m++)
         {
@@ -48,7 +46,6 @@ void* det(void *args)
             {
                 submtx[i] = (int *) malloc ((tempN-1) * sizeof(int));
             }
-            printf("Create new array \n");
             /* Populate the sub matrix */
             nrow = 0;
             for (i = 1; i < tempN; i++)
@@ -59,29 +56,28 @@ void* det(void *args)
                     if (j != m)
                     {
                         submtx[nrow][ncol] = temp->mtx[i][j];
-                        printf("nrow= %d, ncol= %d, i= %d,j= %d \n", nrow,ncol,i,j);
+//                        printf("nrow= %d, ncol= %d, i= %d,j= %d \n", nrow,ncol,i,j);
                         ncol++;
                     }
                     
                 }
                 nrow++;
-            }   
-            printf("Create new thread \n");
+            }
             /* Create new thread to compute sub matrix's determinant*/
             subData[m].n = (tempN-1);
             subData[m].mtx = submtx;
-            ret = pthread_create(&subData[m].tid,NULL,(void *)det, &subData[m]);
-            printf("ret = %d \n", ret);
+            pthread_create(&subData[m].tid,NULL,(void *)det, &subData[m]);
         }
         
         for (m = 0; m < temp->n; m++)
         {
             pthread_join(subData[m].tid, NULL);
+//            printf("subData[m].ans = %d \n", subData[m].ans);
             ans += sign * (temp->mtx[0][m] * subData[m].ans);
             sign = -1 * sign;
         }
     }
-
+//    printf("ans = %d \n",ans);
     temp->ans = ans;
 }
 
@@ -89,19 +85,25 @@ int main()
 {
     int n, i, j, ans = -1;
     struct detData findDet;
-//    pthread_t tid;
     /*
     n = 3;
-    int test[3][3] = {{0, 2, -1},
-                     {0, 0, 5},
+    int test[3][3] = {{10, 2, -1},
+                     {3, 1, 5},
                      {1, 4, -3}};
     */
     n = 4;
+    /*
     int test[4][4] = {{1, 0, 2, -1},
                      {3, 0, 0, 5},
                      {2, 1, 4, -3},
                      {1, 0, 5, 0}}; /* det = 30 */
     /*
+    int test[4][4] = {{0, 4, 0, -3},
+                      {1, 1, 5, 2},
+                      {1, -2, 0, 6},
+                      {3, 0, 0, 1}}; /* det = -250 */
+                     
+    
     while (1)
     {
        printf("Input(N): ");
@@ -113,7 +115,7 @@ int main()
        }
        printf("\n This program only support when N >= 2 \n");
     }
-    */
+    
     /* Making rand() matrix NxN */
     
     srand(time(NULL));
@@ -127,8 +129,8 @@ int main()
     {
         for (j = 0; j < n; j++)
         {
-            //mtx[i][j] = rand() % 10;
-            mtx[i][j] = test[i][j];
+            mtx[i][j] = rand();
+            //mtx[i][j] = test[i][j];
         }
     }
       
