@@ -4,6 +4,7 @@ Author: Hei Tung Kan
 Student ID: 301235768
 Course: CMPT300
 Date: July 8, 2018
+Modified: July 9, 2018
 File: dinphil.c
 Compile Instruction: gcc dinphil.c -o dinphil -lpthread
 
@@ -12,12 +13,9 @@ Example deadlock scenario:
 Resource hierarchy solution for dining philosopher will not generate deadlocks because the lower number philosopher must wait for the higher number philosopher to finish eating before locking any resources. Seem the highest philosopher will always be able to eat (it have its own fork and lower number philosopher must wait for higher number philosopher to finish eating). Deadlocks where two philosophers are waiting for each other's resource will not happen. Therefore, there are no specific input and expected output for TA to verify as Deadlock will never occur.
 */
 
-#include<stdlib.h>
 #include<stdio.h>
-#include<errno.h>
 #include<semaphore.h>
 #include<pthread.h>
-#include<signal.h>
 
 int isEnd[5] = {}; /* Thread should end */
 int state[5] = {}; /* Philosophers' state init to Thinking(0) */
@@ -38,11 +36,13 @@ void* phil(void* args)
         {
             printf("pthread_cond_wait on think cv failed on philosopher %d \n", num);
         }
+        
         if (isEnd[num])
         {
             /* Got end program signal (isEnd) */
             break;
         }
+        
         /* Grab fork */
         if (num == 0)
         {
@@ -137,7 +137,7 @@ int main()
             /* Assignment said all input are valid */
         }
     }
-    int ret;
+    
     /* join threads and destory mutex and cv */
     for (i = 0; i < 5; ++i)
     {
@@ -171,9 +171,9 @@ int main()
             printf("Unable to destory think_cv for thread %d \n", i);
         }
         
-        if(ret = pthread_mutex_destroy(&think_eat_mut[i]))
+        if(pthread_mutex_destroy(&think_eat_mut[i]))
         {
-            printf("Unable to destory think_eat_mut for thread %d with ret= %d \n", i, ret);
+            printf("Unable to destory think_eat_mut for thread %d \n", i);
         }
     }
     
