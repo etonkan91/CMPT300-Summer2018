@@ -68,8 +68,8 @@ void* det(void *args)
             }   
             printf("Create new thread \n");
             /* Create new thread to compute sub matrix's determinant*/
-            subData[i].n = (tempN-1);
-            subData[i].mtx = submtx;
+            subData[m].n = (tempN-1);
+            subData[m].mtx = submtx;
             ret = pthread_create(&subData[m].tid,NULL,(void *)det, &subData[m]);
             printf("ret = %d \n", ret);
         }
@@ -90,12 +90,13 @@ int main()
     int n, i, j, ans = -1;
     struct detData findDet;
 //    pthread_t tid;
-    
+    /*
     n = 3;
     int test[3][3] = {{0, 2, -1},
                      {0, 0, 5},
                      {1, 4, -3}};
-    /*
+    */
+    n = 4;
     int test[4][4] = {{1, 0, 2, -1},
                      {3, 0, 0, 5},
                      {2, 1, 4, -3},
