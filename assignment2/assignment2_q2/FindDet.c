@@ -4,7 +4,7 @@ Author: Hei Tung Kan
 Student ID: 301235768
 Course: CMPT300
 Date: July 8, 2018
-Modified: July 9, 2018
+Modified: July 10, 2018
 File: FindDet.c
 Compile Instruction: gcc FindDet.c -o FindDet -lpthread
 Assignment2 Question 2
@@ -79,8 +79,17 @@ void* det(void *args)
             /* Alternating sign for adding first row */
             detAns += sign * (temp->mtx[0][m] * subData[m].detAns);
             sign = -1 * sign;
+			
+			/* Release dynamic allocated memories */
+			for(i = 0; i < tempN-1; i++)
+			{
+				free(subData[m].mtx[i]);
+			}
+			free(subData[m].mtx);
+
         }
     }
+	/* Save the sub matrix's determinant and close the thread */
     temp->detAns = detAns;
     pthread_exit(&ret);
 }
@@ -90,6 +99,18 @@ int main()
     int sizeN = -1;
     int i = -1, j = -1;
     struct detData findDet;
+                              
+    while (1)
+    {
+       printf("Input(N):");
+       scanf("%d", &sizeN);
+       if (sizeN >= 2)
+       {
+            break;
+            
+       }
+       printf("\nThis program only support when sizeN >= 2\n");
+    }
     
     /* Example One */
     /*
@@ -105,19 +126,7 @@ int main()
                      {3, 0, 0, 5},
                      {2, 1, 4, -3},
                      {1, 0, 5, 0}}; /* det = 30 */
-                                   
-    while (1)
-    {
-       printf("Input(N):");
-       scanf("%d", &sizeN);
-       if (sizeN >= 2)
-       {
-            break;
-            
-       }
-       printf("\nThis program only support when sizeN >= 2\n");
-    }
-    
+
     /* Making rand() matrix NxN */
     srand(time(NULL));
     int ** mtx = (int**) malloc (sizeN * sizeof(int*));    
@@ -134,14 +143,22 @@ int main()
             /*mtx[i][j] = test[i][j];*/
         }
     }
-      
+    
     findDet.sizeN = sizeN;
     findDet.mtx = mtx;
-    
     pthread_create(&findDet.tid,NULL,(void *)det, &findDet);
     
     pthread_join(findDet.tid, NULL);
+
     printf("\nOutput:\n");
     printf("Determinant: %d\n", findDet.detAns);
+
+	/* Release dynamic allocated memories */
+    for(i = 0; i < sizeN; i++)
+    {
+		free(mtx[i]);
+    }
+    free(mtx);
+
     return 0;
 }
