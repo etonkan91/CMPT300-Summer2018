@@ -74,10 +74,8 @@ void* det(void *args)
         for (m = 0; m < temp->sizeN; m++)
         {
             /* Wait for subthreads to be done */
-            if(pthread_join(subData[m].tid, NULL))
-            {
-                printf("Unable to join thread %d", m);
-            }
+            pthread_join(subData[m].tid, NULL);
+            
             /* Alternating sign for adding first row */
             detAns += sign * (temp->mtx[0][m] * subData[m].detAns);
             sign = -1 * sign;
@@ -117,7 +115,7 @@ int main()
             break;
             
        }
-       printf("\nThis program only support when sizeN >= 2 \n");
+       printf("\nThis program only support when sizeN >= 2\n");
     }
     
     /* Making rand() matrix NxN */
