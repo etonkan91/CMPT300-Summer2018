@@ -16,6 +16,7 @@ Resource hierarchy solution for dining philosopher will not generate deadlocks b
 #include<stdio.h>
 #include<semaphore.h>
 #include<pthread.h>
+#include <unistd.h>
 
 int isEnd[5] = {}; /* Thread should end */
 int state[5] = {}; /* Philosophers' state init to Thinking(0) */
@@ -29,13 +30,11 @@ pthread_cond_t think_cv[5] = PTHREAD_COND_INITIALIZER; /* Thinking */
 void* phil(void* args)
 {
     int num = *((int *) args);
+    int ret = 0;
     while(!isEnd[num])
     {
         /* Thinking */
-        if (pthread_cond_wait(&think_cv[num], &think_eat_mut[num]))
-        {
-            printf("pthread_cond_wait on think cv failed on philosopher %d \n", num);
-        }
+        pthread_cond_wait(&think_cv[num], &think_eat_mut[num]);
         
         if (isEnd[num])
         {
@@ -47,7 +46,7 @@ void* phil(void* args)
         if (num == 0)
         {
             pthread_mutex_lock(&fork_mut[num]);
-            pthread_mutex_lock(&fork_mut[((num + 1) % 5)]); /* Right lock (Higher) */
+            pthread_mutex_lock(&fork_mut[((num + 4) % 5)]); /* Left lock (Higher)) */
         }
         else
         {
@@ -59,10 +58,7 @@ void* phil(void* args)
         pthread_mutex_lock(&mut_state);
         state[num] = 1; /* Change state to eating */
         pthread_mutex_unlock(&mut_state);
-        if(pthread_cond_wait(&eat_cv[num], &think_eat_mut[num]))
-        {
-            printf("pthread_cond_wait on eat cv failed on philosopher %d \n", num);
-        }
+        pthread_cond_wait(&eat_cv[num], &think_eat_mut[num]);
         
         /* Starting thinking, release forks */ 
         pthread_mutex_lock(&mut_state);
@@ -73,7 +69,7 @@ void* phil(void* args)
         if (num == 0)
         {
             pthread_mutex_unlock(&fork_mut[num]);
-            pthread_mutex_unlock(&fork_mut[((num + 1) % 5)]); /* Right lock (Higher) */
+            pthread_mutex_unlock(&fork_mut[((num + 4) % 5)]); /* Left lock (Higher)) */
         }
         else
         {
@@ -81,54 +77,54 @@ void* phil(void* args)
             pthread_mutex_unlock(&fork_mut[num]);
         }
     }
+    pthread_exit(&ret);
 }
 
 int main()
 {
-    int i, input_num = 0;
+    int i = 0, input_num = -1;
     int phil_num[5] = {0,1,2,3,4};
-    char input_char = ' ';
+    char input[4] = {' ',' ',' ',' '};
+    char output[10] = {' ',' ',' ',' ',' ',' ',' ',' ',' ','\n'};
     pthread_t tid[5];
     
     for(i = 0; i < 5; ++i)
     {
         /* Creating 5 Philosophers represented with 5 threads*/
-        if(pthread_create(&tid[i],NULL,(void *)phil, &phil_num[i]))
-        {
-            printf("Unable to create thread %d \n", i);
-        }
+        pthread_create(&tid[i],NULL,(void *)phil, &phil_num[i]);
          
     }
     
     while (1) /* True */
     {
-        scanf(" %c", &input_char);
+
+        /* Read user input */
+        read(0, &input, 4);
         
-        if(input_char == '!')
+        if(input[0] == '!')
         {
             /* Exit Program */ 
             break;
         }
-        else if (input_char == 'P')
+        else if (input[0] == 'P')
         {
-            /* Print states of all philosophers 
-               Note: when state is 2, it is in hungry(2) which is same as thinking (0) */
-            for(i = 0; i < 4; ++i)
+            /* Print states of all philosophers */
+            for(i = 0; i < 10; i+=2)
             {
-                printf("%d ", state[i]);
+                output[i] = state[i/2] + '0';
             }
-            printf("%d\n", state[i]);
+            write(1, &output, 10);
         }
-        else if (input_char == 'T')
+        else if (input[0] == 'T')
         {
+            input_num = input[2] - '0';
             /* Request Philosopher to Think */
-            scanf("%d", &input_num);
             pthread_cond_signal(&eat_cv[input_num]);
         }
-        else if (input_char == 'E')
+        else if (input[0] == 'E')
         {
+            input_num = input[2] - '0';
             /* Request Philosopher to Eat */
-            scanf("%d", &input_num);
             pthread_cond_signal(&think_cv[input_num]);
         }
         else 
@@ -148,38 +144,17 @@ int main()
         pthread_cond_signal(&think_cv[i]);
         
         /* Wait for threads to close */
-        if(pthread_join(tid[i],NULL))
-        {
-            printf("Unable to join thread %d \n", i);
-        }
+        pthread_join(tid[i],NULL);
     }
     for (i = 0; i < 5; ++i)
     {
-        
-        if(pthread_mutex_destroy(&fork_mut[i]))
-        {
-            printf("Unable to destory fork_mut for thread %d \n", i);
-        }
-        
-        if(pthread_cond_destroy(&eat_cv[i]))
-        {
-            printf("Unable to destory eat_cv for thread %d \n", i);
-        }
-        
-        if(pthread_cond_destroy(&think_cv[i]))
-        {
-            printf("Unable to destory think_cv for thread %d \n", i);
-        }
-        
-        if(pthread_mutex_destroy(&think_eat_mut[i]))
-        {
-            printf("Unable to destory think_eat_mut for thread %d \n", i);
-        }
+        /* Destory mutex and cv*/
+        pthread_mutex_destroy(&fork_mut[i]);
+        pthread_cond_destroy(&eat_cv[i]);
+        pthread_cond_destroy(&think_cv[i]);
+        pthread_mutex_destroy(&think_eat_mut[i]);
     }
     
-    if(pthread_mutex_destroy(&mut_state))
-    {
-        printf("Unable to destory think_cv for thread %d \n", i);
-    }
+    pthread_mutex_destroy(&mut_state);
     return 0;
 }
