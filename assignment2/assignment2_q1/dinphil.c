@@ -16,12 +16,13 @@ Compile Instruction: gcc dinphil.c -o dinphil -lpthread
 
 int isEnd[5] = {}; /* Thread should end */
 int state[5] = {}; /* Philosophers' state init to Thinking(0) */
-/* Mutex for controlling access to state[5] (0) and Fork 1 to 5 (1 to 5) */
-pthread_mutex_t state_fork_mut[6] = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mut_state = PTHREAD_MUTEX_INITIALIZER; /* Mutex for philosophers' state array */
+pthread_mutex_t fork_mut[5] = PTHREAD_MUTEX_INITIALIZER; /* Mutex for Fork */
 pthread_mutex_t think_eat_mut[5] = PTHREAD_MUTEX_INITIALIZER; /* Mutex for Thinking and Eating */
 pthread_cond_t eat_cv[5] = PTHREAD_COND_INITIALIZER; /* Eating */
 pthread_cond_t think_cv[5] = PTHREAD_COND_INITIALIZER; /* Thinking */
 
+/* Thinking(0), Eating(1), Hungry(2) */
 void* phil(void* args)
 {
     int num = *((int *) args);
@@ -40,40 +41,37 @@ void* phil(void* args)
         /* Grab fork */
         if (num == 4)
         {
-            pthread_mutex_lock(&state_fork_mut[((num + 2) % 5)]); /* Left lock (Lower) (Fork 1_) */
-            pthread_mutex_lock(&state_fork_mut[num + 1]);
-            
+            pthread_mutex_lock(&fork_mut[((num + 1) % 5)]); /* Left lock (Lower, Fork 0)) */
+            pthread_mutex_lock(&fork_mut[num]);
         }
         else
         {
-            pthread_mutex_lock(&state_fork_mut[num + 1]);
-            pthread_mutex_lock(&state_fork_mut[((num + 2) % 5)]); /* Left lock (Higher) */
+            pthread_mutex_lock(&fork_mut[num]);
+            pthread_mutex_lock(&fork_mut[((num + 1) % 5)]); /* Left lock (Higher) */
         }
-
+        
         /* Acquired both forks, start eating */
-        pthread_mutex_lock(&state_fork_mut[0]);
+        pthread_mutex_lock(&mut_state);
         state[num] = 1; /* Change state to eating */
-        pthread_mutex_unlock(&state_fork_mut[0]);
+        pthread_mutex_unlock(&mut_state);
         pthread_cond_wait(&eat_cv[num], &think_eat_mut[num]);
         
         /* Starting thinking, release forks */ 
-        pthread_mutex_lock(&state_fork_mut[0]);
+        pthread_mutex_lock(&mut_state);
         state[num] = 0; /* Change state to thinking */
-        pthread_mutex_unlock(&state_fork_mut[0]);
+        pthread_mutex_unlock(&mut_state);
         
-        /* Release forks (order doesn't matter) */
+        /* Release forks (Order doesn't matter) */
         if (num == 4)
         {
-            pthread_mutex_unlock(&state_fork_mut[((num + 2) % 5)]); /* Left lock (Lower) (Fork 1_) */
-            pthread_mutex_unlock(&state_fork_mut[num + 1]);
-            
+            pthread_mutex_unlock(&fork_mut[((num + 1) % 5)]); /* Left lock (Lower, Fork 0)) */
+            pthread_mutex_unlock(&fork_mut[num]);
         }
         else
         {
-            pthread_mutex_unlock(&state_fork_mut[num + 1]);
-            pthread_mutex_unlock(&state_fork_mut[((num + 2) % 5)]); /* Left lock (Higher) */  
+            pthread_mutex_unlock(&fork_mut[num]);
+            pthread_mutex_unlock(&fork_mut[((num + 1) % 5)]); /* Left lock (Higher) */
         }
-
     }
     pthread_exit(&ret);
 }
@@ -138,7 +136,6 @@ int main()
         /* Signaling each thread that it is ending */
         isEnd[i] = 1;
         
-        /* Let threads release resource they were holding and exit */
         pthread_cond_signal(&eat_cv[i]);
         pthread_cond_signal(&think_cv[i]);
         
@@ -149,15 +146,12 @@ int main()
     for (i = 0; i < 5; ++i)
     {
         /* Destory mutex and cv*/
+        pthread_mutex_destroy(&fork_mut[i]);
         pthread_cond_destroy(&eat_cv[i]);
         pthread_cond_destroy(&think_cv[i]);
         pthread_mutex_destroy(&think_eat_mut[i]);
     }
     
-    for (i = 0; i < 6; ++i)
-    {
-        pthread_mutex_destroy(&state_fork_mut[i]);
-    }
-    
+    pthread_mutex_destroy(&mut_state);
     return 0;
 }
