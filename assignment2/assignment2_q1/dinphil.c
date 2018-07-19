@@ -22,7 +22,7 @@ pthread_mutex_t think_eat_mut[5] = PTHREAD_MUTEX_INITIALIZER; /* Mutex for Think
 pthread_cond_t eat_cv[5] = PTHREAD_COND_INITIALIZER; /* Eating */
 pthread_cond_t think_cv[5] = PTHREAD_COND_INITIALIZER; /* Thinking */
 
-/* Thinking(0), Eating(1), Hungry(2) */
+/* Philosopher's function (thread function) */
 void* phil(void* args)
 {
     int num = *((int *) args);
